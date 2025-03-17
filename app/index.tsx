@@ -64,7 +64,7 @@ export default function App() {
         }
       });
 
-      const response = await fetch("http://192.168.68.69:5000/upload", {
+      const response = await fetch("http://ADDYOURIPHERE/upload", {
         method: "POST",
         body: form,
         headers: {
