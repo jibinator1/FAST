@@ -1,0 +1,100 @@
+import { StyleSheet } from "react-native";
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "black",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "white",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 10,
+    color: "white",
+  },
+  pickerSelect: {
+    width: "100%",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    padding: 10,
+    borderRadius: 10,
+    marginVertical: 5,
+    borderWidth: 1,
+    borderColor: "#fff",
+    color: "white",
+  },
+  toggleButton: {
+    marginVertical: 10,
+    padding: 15,
+    borderRadius: 25,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    alignItems: "center",
+    width: "80%",
+  },
+  toggleText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginTop: 20,
+    color: "white",
+    textAlign: "center",
+  },
+  speechText: {
+    fontSize: 16,
+    fontStyle: "italic",
+    color: "#ddd",
+    marginVertical: 10,
+    textAlign: "center",
+  },
+  successText: {
+    fontSize: 16,
+    color: "#0f0",
+    marginVertical: 5,
+  },
+  cameraButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    padding: 15,
+    borderRadius: 50,
+    marginTop: 15,
+    width: "80%",
+  },
+  buttonText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+    marginLeft: 10,
+  },
+  uploadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 122, 255, 0.8)",
+    padding: 15,
+    borderRadius: 50,
+    marginTop: 20,
+    width: "80%",
+  },
+  uploadButtonText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+    marginLeft: 10,
+  },
+});
+
+export default styles;
