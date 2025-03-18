@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torchvision.transforms as transforms
 from PIL import Image
 
+
 class StrokeCNN(nn.Module):
     def __init__(self):
         super(StrokeCNN, self).__init__()
@@ -12,6 +13,7 @@ class StrokeCNN(nn.Module):
         self.conv3 = nn.Conv2d(128, 128, kernel_size=3, padding=1)
         self.fc1 = nn.Linear(128 * 26 * 37, 128)  # Adjust based on the feature map size
         self.fc2 = nn.Linear(128, 1)  # 1 output instead of 2
+
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
@@ -25,51 +27,44 @@ class StrokeCNN(nn.Module):
         x = self.fc2(x)
         return x
 
+
 def load_model():
     model_path = "app/stroke_cnn (1).pth"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+   
     model = StrokeCNN()  # Ensure this matches the trained architecture
     model.load_state_dict(torch.load(model_path, map_location=device), strict=False)  # Allow partial loading
     model.to(device)
     model.eval()
-    
+   
     return model
 
-def predict(image_path, model, hypertension=0, bmi=0, heart_disease=0):
-    """Predict stroke probability with optional additional factors."""
-    base_transform = transforms.Compose([
-        transforms.Resize((215, 300)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-    
-    aug_transform = transforms.Compose([
-        transforms.Resize((215, 300)),
-        transforms.RandomHorizontalFlip(p=1.0),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
 
-    image = Image.open(image_path).convert("RGB")
-    
-    original_image = base_transform(image).unsqueeze(0)
-    augmented_image = aug_transform(image).unsqueeze(0)
+def predict(image_path, model):
+    """Predict stroke classification for a single image."""
+    transform = transforms.Compose([
+        transforms.Resize((215, 300)),  # Resize images to 225x225
+        transforms.RandomRotation(30),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # RGB normalization
+    ])
+   
+    image = Image.open(image_path).convert("RGB")  # Ensure image is RGB
+    image = transform(image).unsqueeze(0)  # Add batch dimension
+
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    original_image = original_image.to(device)
-    augmented_image = augmented_image.to(device)
+    image = image.to(device)
+
 
     with torch.no_grad():
-        output1 = model(original_image)
-        output2 = model(augmented_image)
-        
-        prob1 = torch.sigmoid(output1).item()
-        prob2 = torch.sigmoid(output2).item()
-        average_prob = (prob1 + prob2) / 2
+        output = model(image)
+        predicted_class = torch.sigmoid(output).item()  # Use sigmoid for binary classification
+   
+    return predicted_class *100
 
-    # **Modify this part later to use hypertension, bmi, heart_disease**
-    return average_prob * 100
 
 
 
@@ -81,8 +76,13 @@ def analyze_images(image_paths):
         results[image_path] = predict(image_path, model)
     return results
 
+
 if __name__ == "__main__":
     model = load_model()
     test_images = ["image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg"]  # Replace with actual paths
     results = analyze_images(test_images)
     print(results)
+
+
+
+

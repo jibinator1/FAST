@@ -1,182 +1,95 @@
-import React, { useState } from 'react';
-import { View, Button, Text, TextInput, Switch, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Button, Text, Image, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Picker } from '@react-native-picker/picker';
 
 export default function App() {
   const [image, setImage] = useState<string | null>(null);
   const [prediction, setPrediction] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    age: '',
-    hypertension: false,
-    heart_disease: false,
-    avg_glucose_level: '',
-    bmi: '',
-    gender: 'Male',
-    ever_married: 'No',
-    work_type: 'Private',
-    residence_type: 'Urban', // Fixed key name
-    smoking_status: 'never smoked'
-  });
 
-  const handleInputChange = (name: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+  // Request permissions for camera and gallery
+  const requestPermissions = async () => {
+    const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+    const { status: mediaLibraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (cameraStatus !== 'granted' || mediaLibraryStatus !== 'granted') {
+      Alert.alert('Permission to access camera or media library is required!');
+    }
   };
 
+  // Function to take a photo using the camera
   const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert("Permission required", "Camera access is needed to take photos.");
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    let result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
 
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
+    console.log("Camera result:", result); // Debug log to check the result
+
+    // Check if the photo was not canceled and assets exist
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const uri = result.assets[0].uri; // Get URI from the first asset
+      setImage(uri);
+      uploadImage(uri); // Upload the image immediately
+    } else {
+      Alert.alert('Photo capture cancelled!');
     }
   };
 
-  const uploadData = async () => {
-    const payload = {
-      ...formData,
-      hypertension: formData.hypertension ? "true" : "false",
-      heart_disease: formData.heart_disease ? "true" : "false",
-      image: image
-        ? {
-            uri: image,
-            name: image.split('/').pop(),
-            type: 'image/jpeg'
-          }
-        : null
-    };
+  // Send the image to the Flask server for prediction
+  const uploadImage = async (uri: string) => {
+    if (!uri) {
+      Alert.alert("Please take a photo first!");
+      return;
+    }
+
+    let localUri = uri;
+    let filename = localUri.split("/").pop();
+    let type = "image/jpeg"; // Adjust based on the actual image format if necessary
+
+    const formData = new FormData();
+    formData.append("face", { uri: localUri, name: filename, type });
 
     try {
-      const form = new FormData();
-      Object.entries(payload).forEach(([key, value]) => {
-        if (value !== null) {
-          form.append(key, value);
-        }
-      });
-
       const response = await fetch("http://192.168.68.69:5000/upload", {
         method: "POST",
-        body: form,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error(`Server Error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error("Server error");
 
-      const result = await response.json();
-      setPrediction(result.prediction);
-      Alert.alert(`Stroke Risk: ${result.risk_level} (${result.probability}%)`);
-    } catch (error: any) {
-      Alert.alert("Error", error.message || "Something went wrong.");
+      const responseJson = await response.json();
+      setPrediction(responseJson.results.face);
+      Alert.alert("Prediction: " + responseJson.results.face);
+    } catch (error) {
+      console.error("Upload Error:", error);
+      Alert.alert("Upload Error: " + error.message);
     }
   };
 
+  // Request permissions on component mount
+  useEffect(() => {
+    requestPermissions();
+  }, []);
+
   return (
-    <ScrollView contentContainerStyle={{ padding: 20 }}>
-      <Text>Age:</Text>
-      <TextInput
-        placeholder="Age"
-        keyboardType="numeric"
-        onChangeText={t => handleInputChange('age', t)}
-      />
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Take a Photo for Prediction:</Text>
+      <Button title="Take a Photo" onPress={takePhoto} />
 
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Text>Hypertension:</Text>
-        <Switch
-          value={formData.hypertension}
-          onValueChange={v => handleInputChange('hypertension', v)}
-        />
-      </View>
+      {image && (
+        <View style={{ marginTop: 20 }}>
+          <Text>Captured Image:</Text>
+          <Image source={{ uri: image }} style={{ width: 200, height: 200 }} />
+        </View>
+      )}
 
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Text>Heart Disease:</Text>
-        <Switch
-          value={formData.heart_disease}
-          onValueChange={v => handleInputChange('heart_disease', v)}
-        />
-      </View>
-
-      <Text>Avg Glucose Level:</Text>
-      <TextInput
-        placeholder="Glucose Level"
-        keyboardType="numeric"
-        onChangeText={t => handleInputChange('avg_glucose_level', t)}
-      />
-
-      <Text>BMI:</Text>
-      <TextInput
-        placeholder="BMI"
-        keyboardType="numeric"
-        onChangeText={t => handleInputChange('bmi', t)}
-      />
-
-      <Text>Gender:</Text>
-      <Picker
-        selectedValue={formData.gender}
-        onValueChange={t => handleInputChange('gender', t)}
-      >
-        <Picker.Item label="Male" value="Male" />
-        <Picker.Item label="Female" value="Female" />
-        <Picker.Item label="Other" value="Other" />
-      </Picker>
-
-      <Text>Ever Married:</Text>
-      <Picker
-        selectedValue={formData.ever_married}
-        onValueChange={t => handleInputChange('ever_married', t)}
-      >
-        <Picker.Item label="No" value="No" />
-        <Picker.Item label="Yes" value="Yes" />
-      </Picker>
-
-      <Text>Work Type:</Text>
-      <Picker
-        selectedValue={formData.work_type}
-        onValueChange={t => handleInputChange('work_type', t)}
-      >
-        <Picker.Item label="Private" value="Private" />
-        <Picker.Item label="Self-employed" value="Self-employed" />
-        <Picker.Item label="Government Job" value="Govt_job" />
-        <Picker.Item label="Children" value="Children" />
-        <Picker.Item label="Never Worked" value="Never_worked" />
-      </Picker>
-
-      <Text>Residence Type:</Text>
-      <Picker
-        selectedValue={formData.residence_type}
-        onValueChange={t => handleInputChange('residence_type', t)}
-      >
-        <Picker.Item label="Urban" value="Urban" />
-        <Picker.Item label="Rural" value="Rural" />
-      </Picker>
-
-      <Text>Smoking Status:</Text>
-      <Picker
-        selectedValue={formData.smoking_status}
-        onValueChange={t => handleInputChange('smoking_status', t)}
-      >
-        <Picker.Item label="Never Smoked" value="never smoked" />
-        <Picker.Item label="Formerly Smoked" value="formerly smoked" />
-        <Picker.Item label="Smokes" value="smokes" />
-      </Picker>
-
-      <Button title="Take Photo" onPress={takePhoto} />
-      {image && <Text>Photo Selected</Text>}
-
-      <Button title="Submit" onPress={uploadData} />
-    </ScrollView>
+      {prediction && (
+        <View style={{ marginTop: 20 }}>
+          <Text>Prediction Result:</Text>
+          <Text>{prediction}</Text>
+        </View>
+      )}
+    </View>
   );
 }
