@@ -29,7 +29,7 @@ class StrokeCNN(nn.Module):
 
 
 def load_model():
-    model_path = "app/stroke_cnn (1).pth"
+    model_path = "app/stroke_cnn.pth"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
    
     model = StrokeCNN()  # Ensure this matches the trained architecture
@@ -44,9 +44,6 @@ def predict(image_path, model):
     """Predict stroke classification for a single image."""
     transform = transforms.Compose([
         transforms.Resize((215, 300)),  # Resize images to 225x225
-        transforms.RandomRotation(30),
-        transforms.RandomHorizontalFlip(),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # RGB normalization
     ])
