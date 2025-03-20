@@ -1,4 +1,4 @@
-#F.A.S.T. Guardian
+# F.A.S.T. Guardian
 
 F.A.S.T was created during the 2025 Data Minds Competition, where we were given the healthcare theme and tasked with building a data focused solution.
 
@@ -7,7 +7,7 @@ F.A.S.T. Guardian is an AI-powered stroke detection app that analyzes facial exp
 
 
 
-#Setup Instructions
+# Setup Instructions
 
 
 
